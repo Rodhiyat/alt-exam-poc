@@ -50,7 +50,7 @@ create table if not exists ALT_SCHOOL.LINE_ITEMS
 (
     line_item_id serial primary key,
     order_id uuid not null,
-    item_id uuid not null,
+    item_id bigint not null,
     quantity bigint not null
 );
 
