@@ -9,7 +9,9 @@ WITH added_items AS
 	JOIN alt_school.products p 
 	ON (e.event_data ->> 'item_id')::INTEGER  = p.id 
 	WHERE event_data @> '{"event_type":"add_to_cart"}' AND o.order_id IN 
+	--the where condition filters this cte to return 
 		(
+		--this subquery filters the events table and returns a list of order_id with successful checkout
 		SELECT (e2.event_data ->> 'order_id')::uuid AS order_id 
 		FROM alt_school.events e2 
 		WHERE event_data @> '{"status":"success"}' 
@@ -23,12 +25,14 @@ removed_items AS
 	FROM alt_school.events e3
 	LEFT JOIN alt_school.orders o3 
 	ON e3.customer_id =o3.customer_id
-	WHERE event_data @> '{"event_type":"remove_from_cart"}' and o3.order_id in 
+	WHERE event_data @> '{"event_type":"remove_from_cart"}' and o3.order_id in
+	--filters to get rows with event type removed_from_cart for carts with successful checkout
 		(
+		--this subquery returns a list of order_id for carts with successful checkout
 		SELECT (e4.event_data ->> 'order_id')::uuid AS order_id 
 		FROM alt_school.events e4 
 		WHERE event_data @> '{"status":"success"}' 
-		AND event_data @> '{"event_type":"checkout"}'
+		AND event_data @> '{"event_type":"checkout"}' --filters to return only order_id with successful checkout
 		)
 	)
 SELECT
@@ -41,7 +45,7 @@ LEFT JOIN
 	--JOIN BOTH CTE TO GET ITEMS THAT WERE CHECKED OUT SUCCESSFULLY
     removed_items ri ON ai.order_id = ri.order_id AND ai.item_id = ri.item_id
 WHERE
-    ri.order_id IS null
+    ri.order_id IS null --to filter out removed items
 GROUP BY 1,2
 ORDER BY num_times_in_successful_orders DESC
 LIMIT 1;
@@ -88,6 +92,7 @@ removed_items AS
 	ON e3.customer_id =o3.customer_id
 	WHERE event_data @> '{"event_type":"remove_from_cart"}' and o3.order_id in 
 		(
+		--returns a list of successful checkouts order_id  
 		SELECT (e4.event_data ->> 'order_id')::uuid AS order_id 
 		FROM alt_school.events e4 
 		WHERE event_data @> '{"status":"success"}' 
@@ -100,10 +105,10 @@ SELECT
 	sum(ai.spend) as total_spend
  FROM
     added_items ai
-LEFT JOIN
+LEFT JOIN --join both tables 
     removed_items ri ON ai.order_id = ri.order_id AND ai.item_id = ri.item_id
 WHERE
-    ri.order_id IS NULL
+    ri.order_id IS NULL --to filter out removed items
 GROUP BY 1,2
 ORDER BY total_spend DESC
 LIMIT 5;
